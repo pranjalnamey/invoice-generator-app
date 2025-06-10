@@ -191,12 +191,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+            if (!response.ok) {
+                let errorDetails = `Status: ${response.status}`;
+                try {
+                    const errorBody = await response.json();
+                    errorDetails = errorBody.error.message || JSON.stringify(errorBody);
+                } catch (e) { /* Ignore if response body is not JSON */ }
+                throw new Error(errorDetails);
+            }
             const result = await response.json();
-            return result.candidates[0].content.parts[0].text;
+            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                 throw new Error("Invalid API response structure.");
+            }
         } catch (error) {
             console.error("Error calling Gemini API:", error);
-            return "Error generating content.";
+            return `Error: Could not generate content. (${error.message})`;
         }
     }
     
@@ -253,7 +264,10 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerHTML = `<div class="loader"></div>`;
             btn.disabled = true;
             const prompt = `Expand this brief service description into a professional one-line item for an invoice: "${descInput.value}". Keep it concise and professional.`;
-            descInput.value = (await generateText(prompt)).replace(/"/g, '');
+            const newDescription = (await generateText(prompt));
+            if (!newDescription.startsWith("Error:")) {
+                descInput.value = newDescription.replace(/"/g, '');
+            }
             btn.innerHTML = '✨';
             btn.disabled = false;
         });
@@ -346,8 +360,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const prompt = `Draft a polite and professional email to a client named ${currentInvoice.client.name} about invoice #${currentInvoice.id}. The total amount due is $${currentInvoice.amount.toFixed(2)} and the due date is ${new Date(currentInvoice.dueDate).toLocaleDateString()}. Sign off with the name "${currentInvoice.sender.name}". The tone should be friendly but clear. Do not include a subject line.`;
         
-        emailBody.value = await generateText(prompt);
-        emailComposerStatus.textContent = "";
+        const generatedBody = await generateText(prompt);
+        
+        if (generatedBody.startsWith("Error:")) {
+            emailComposerStatus.textContent = generatedBody;
+            emailBody.value = "Sorry, we couldn't generate the email content at this time. Please check your connection or try again later.";
+        } else {
+            emailBody.value = generatedBody;
+            emailComposerStatus.textContent = "";
+        }
+        
         btn.disabled = false;
         btn.innerHTML = 'Regenerate ✨';
     }
@@ -363,21 +385,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = document.getElementById('invoice-preview-content').innerHTML;
         const printWindow = window.open('', '', 'height=800,width=800');
         printWindow.document.write('<html><head><title>Print Invoice</title>');
-        // Crucial: Load Tailwind CSS in the print window
         printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
-        // Crucial: Copy the document's styles to the print window
         printWindow.document.write('<style>' + document.querySelector('style').innerHTML + '</style>');
         printWindow.document.write('</head><body>');
-        printWindow.document.write('<div class="invoice-box">'); // Re-add the container for proper styling
-        printWindow.document.write(content);
-        printWindow.document.write('</div>');
+        printWindow.document.write('<div class="invoice-box">' + content + '</div>');
         printWindow.document.write('</body></html>');
         printWindow.document.close();
         setTimeout(() => { 
             printWindow.focus();
             printWindow.print();
             printWindow.close();
-        }, 1000); // Increased timeout for loading
+        }, 1000);
     }
 
     // --- Event Listeners ---
