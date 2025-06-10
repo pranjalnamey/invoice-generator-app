@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Generator & Tracker (with AI)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .invoice-preview {
+            font-family: 'Arial', sans-serif;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .invoice-preview, .invoice-preview * {
+                visibility: visible;
+            }
+            .invoice-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        .status-draft { background-color: #e5e7eb; color: #4b5563; }
+        .status-sent { background-color: #dbeafe; color: #2563eb; }
+        .status-paid { background-color: #dcfce7; color: #16a34a; }
+        .status-overdue { background-color: #fee2e2; color: #dc2626; }
+        .gemini-btn {
+            display: none; /* Hidden by default */
+        }
+        .loader {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-slate-800">Invoice Generator & Tracker</h1>
+            <p class="text-slate-500 mt-2">Now with ✨ AI-powered features to streamline your workflow.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <!-- Invoice Creation Form -->
+            <div class="bg-white p-8 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-6">Create New Invoice</h2>
+                <form id="invoiceForm" class="space-y-6">
+                    <!-- Your Details -->
+                    <div>
+                        <h3 class="text-lg font-semibold border-b pb-2 mb-4">Your Details</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" id="yourName" placeholder="Your Name" class="p-3 border rounded-lg" required>
+                            <input type="text" id="yourCompany" placeholder="Your Company (Optional)" class="p-3 border rounded-lg">
+                            <input type="email" id="yourEmail" placeholder="Your Email" class="p-3 border rounded-lg md:col-span-2">
+                        </div>
+                    </div>
+                    
+                    <!-- Client Details -->
+                    <div>
+                        <h3 class="text-lg font-semibold border-b pb-2 mb-4">Client's Details</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" id="clientName" placeholder="Client Name" class="p-3 border rounded-lg" required>
+                            <input type="email" id="clientEmail" placeholder="Client Email" class="p-3 border rounded-lg" required>
+                            <input type="text" id="clientCompany" placeholder="Client Company (Optional)" class="p-3 border rounded-lg md:col-span-2">
+                        </div>
+                    </div>
+
+                    <!-- Invoice Items -->
+                    <div>
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h3 class="text-lg font-semibold">Invoice Items</h3>
+                        </div>
+                        <div id="invoiceItems" class="space-y-3">
+                            <!-- JS will inject items here -->
+                        </div>
+                        <button type="button" id="addItemBtn" class="mt-4 bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-lg hover:bg-slate-300">+ Add Item</button>
+                    </div>
+
+                    <!-- Dates -->
+                     <div>
+                        <h3 class="text-lg font-semibold border-b pb-2 mb-4">Dates</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="invoiceDate" class="block text-sm font-medium text-slate-600">Invoice Date</label>
+                                <input type="date" id="invoiceDate" class="p-3 border rounded-lg w-full" required>
+                            </div>
+                            <div>
+                                <label for="dueDate" class="block text-sm font-medium text-slate-600">Due Date</label>
+                                <input type="date" id="dueDate" class="p-3 border rounded-lg w-full" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-lg hover:bg-indigo-700 transition-colors text-lg">Generate Invoice</button>
+                </form>
+            </div>
+
+            <!-- Invoice Tracker & Previews -->
+            <div class="space-y-12">
+                <!-- Tracker -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-6">Invoice Tracker</h2>
+                    <div id="invoiceList" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        <p class="text-slate-500 text-center" id="noInvoicesMessage">No invoices created yet.</p>
+                    </div>
+                </div>
+
+                <!-- Invoice Preview Modal -->
+                <div id="previewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-full overflow-y-auto">
+                        <div class="invoice-preview p-10">
+                           <!-- Invoice content will be injected here -->
+                        </div>
+                        <div class="no-print p-6 bg-slate-50 border-t flex justify-end gap-3">
+                            <button id="closePreviewBtn" class="bg-slate-200 text-slate-800 font-semibold px-6 py-2 rounded-lg hover:bg-slate-300">Close</button>
+                            <button id="printBtn" class="bg-green-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-green-700">Print</button>
+                            <button id="composeEmailBtn" class="bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">Compose Email ✨</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Email Composer Modal -->
+                <div id="emailComposerModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full">
+                         <div class="p-6">
+                            <h3 class="text-xl font-bold mb-4">Compose Email</h3>
+                            <textarea id="emailBody" class="w-full h-64 p-3 border rounded-md"></textarea>
+                            <div id="emailComposerStatus" class="text-sm text-slate-500 h-5 mt-2"></div>
+                         </div>
+                         <div class="p-4 bg-slate-50 border-t flex justify-between items-center">
+                            <button id="regenerateEmailBtn" class="bg-slate-200 text-slate-800 font-semibold px-4 py-2 rounded-lg hover:bg-slate-300 flex items-center gap-2">Regenerate ✨</button>
+                            <div>
+                                <button id="closeEmailComposerBtn" class="bg-slate-200 text-slate-800 font-semibold px-4 py-2 rounded-lg hover:bg-slate-300 mr-2">Cancel</button>
+                                <button id="sendEmailBtn" class="bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700">Send with Email Client</button>
+                            </div>
+                         </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Config ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-invoice-app';
+
+        let app, db, auth, userId;
+        let isAuthReady = false;
+
+        // --- UI Elements ---
+        const invoiceForm = document.getElementById('invoiceForm');
+        const invoiceItemsContainer = document.getElementById('invoiceItems');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const invoiceList = document.getElementById('invoiceList');
+        const noInvoicesMessage = document.getElementById('noInvoicesMessage');
+        const previewModal = document.getElementById('previewModal');
+        const closePreviewBtn = document.getElementById('closePreviewBtn');
+        const printBtn = document.getElementById('printBtn');
+        const composeEmailBtn = document.getElementById('composeEmailBtn');
+        const emailComposerModal = document.getElementById('emailComposerModal');
+        const emailBody = document.getElementById('emailBody');
+        const regenerateEmailBtn = document.getElementById('regenerateEmailBtn');
+        const closeEmailComposerBtn = document.getElementById('closeEmailComposerBtn');
+        const sendEmailBtn = document.getElementById('sendEmailBtn');
+        const emailComposerStatus = document.getElementById('emailComposerStatus');
+        
+        let currentInvoiceData = null;
+
+        // --- Gemini API Function ---
+        /**
+         * Calls the Gemini API to generate text.
+         * @param {string} prompt - The prompt to send to the model.
+         * @returns {Promise<string>} The generated text.
+         */
+        async function generateText(prompt) {
+            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected API response structure:", result);
+                    return "Sorry, I couldn't generate a response.";
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                return "Error connecting to the AI service.";
+            }
+        }
+
+
+        /**
+         * Initialize Firebase services and auth
+         */
+        async function initializeFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                    } else {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    }
+                    isAuthReady = true;
+                    setupRealtimeListener();
+                });
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                isAuthReady = false;
+            }
+        }
+        
+        /**
+         * Add a new item row to the invoice form
+         */
+        function addInvoiceItem() {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'grid grid-cols-12 gap-2 item-row items-center';
+            itemDiv.innerHTML = `
+                <div class="relative col-span-7">
+                    <input type="text" placeholder="Description" class="w-full p-2 border rounded-md item-desc" required>
+                    <button type="button" class="gemini-btn absolute right-2 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-700 font-bold" title="Generate with AI">✨</button>
+                </div>
+                <input type="number" placeholder="Qty" value="1" min="1" class="col-span-2 p-2 border rounded-md item-qty" required>
+                <input type="number" placeholder="Price" min="0" step="0.01" class="col-span-2 p-2 border rounded-md item-price" required>
+                <button type="button" class="col-span-1 text-red-500 hover:text-red-700 text-2xl font-bold removeItemBtn">&times;</button>
+            `;
+            invoiceItemsContainer.appendChild(itemDiv);
+            
+            const descInput = itemDiv.querySelector('.item-desc');
+            const geminiBtn = itemDiv.querySelector('.gemini-btn');
+            
+            descInput.addEventListener('input', () => {
+                geminiBtn.style.display = descInput.value.trim() ? 'block' : 'none';
+            });
+
+            geminiBtn.addEventListener('click', async () => {
+                const originalText = geminiBtn.innerHTML;
+                geminiBtn.innerHTML = `<div class="loader"></div>`;
+                geminiBtn.disabled = true;
+                
+                const prompt = \`Expand this brief service description into a professional one-line item for an invoice: "\${descInput.value}". Keep it concise.\`;
+                const newDescription = await generateText(prompt);
+                descInput.value = newDescription.replace(/"/g, ''); // Remove quotes from response
+                
+                geminiBtn.innerHTML = originalText;
+                geminiBtn.disabled = false;
+            });
+
+            itemDiv.querySelector('.removeItemBtn').addEventListener('click', () => itemDiv.remove());
+        }
+
+        /**
+         * Render the list of tracked invoices
+         */
+        function renderInvoiceList(invoices) {
+            invoiceList.innerHTML = '';
+            if (invoices.length === 0) {
+                invoiceList.appendChild(noInvoicesMessage);
+                return;
+            }
+            
+            invoices.forEach(invoice => {
+                const invoiceEl = document.createElement('div');
+                invoiceEl.className = 'flex items-center justify-between bg-slate-100 p-3 rounded-lg';
+                const dueDate = new Date(invoice.dueDate);
+                const isOverdue = new Date() > dueDate && invoice.status !== 'paid';
+                let status = isOverdue ? 'overdue' : invoice.status;
+
+                invoiceEl.innerHTML = `
+                    <div>
+                        <p class="font-bold">\${invoice.clientName} - #INV\${invoice.id.substring(0, 6).toUpperCase()}</p>
+                        <p class="text-sm text-slate-500">Due: \${dueDate.toLocaleDateString()}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="status-badge status-\${status}">\${status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                         <select class="status-selector bg-transparent border rounded-md p-1" data-id="\${invoice.id}">
+                            <option value="draft" \${invoice.status === 'draft' ? 'selected' : ''}>Draft</option>
+                            <option value="sent" \${invoice.status === 'sent' ? 'selected' : ''}>Sent</option>
+                            <option value="paid" \${invoice.status === 'paid' ? 'selected' : ''}>Paid</option>
+                        </select>
+                        <button class="view-btn text-slate-500 hover:text-indigo-600" data-id="\${invoice.id}">View</button>
+                    </div>
+                `;
+                invoiceList.appendChild(invoiceEl);
+            });
+            
+            document.querySelectorAll('.status-selector').forEach(sel => {
+                sel.addEventListener('change', (e) => updateInvoiceStatus(e.target.dataset.id, e.target.value));
+            });
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const invoice = invoices.find(inv => inv.id === e.currentTarget.dataset.id);
+                    if(invoice) showPreview(invoice);
+                });
+            });
+        }
+        
+        /**
+         * Sets up real-time listener for invoices from Firestore
+         */
+        function setupRealtimeListener() {
+            if (!isAuthReady) return;
+            const invoicesCollection = collection(db, \`artifacts/\${appId}/public/data/invoices\`);
+            onSnapshot(invoicesCollection, (snapshot) => {
+                const invoices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                invoices.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                renderInvoiceList(invoices);
+            }, console.error);
+        }
+
+        /**
+         * Update invoice status in Firestore
+         */
+        async function updateInvoiceStatus(id, status) {
+            if (!isAuthReady) return;
+            const invoiceDocRef = doc(db, \`artifacts/\${appId}/public/data/invoices\`, id);
+            await updateDoc(invoiceDocRef, { status });
+        }
+        
+        /**
+         * Show invoice preview modal
+         */
+        function showPreview(data) {
+            const previewContainer = previewModal.querySelector('.invoice-preview');
+            currentInvoiceData = data;
+            
+            let itemsHtml = '';
+            let subtotal = 0;
+            data.items.forEach(item => {
+                const total = item.qty * item.price;
+                subtotal += total;
+                itemsHtml += `
+                    <tr>
+                        <td class="py-2 border-b">\${item.desc}</td>
+                        <td class="py-2 border-b text-center">\${item.qty}</td>
+                        <td class="py-2 border-b text-right">$ \${item.price.toFixed(2)}</td>
+                        <td class="py-2 border-b text-right">$ \${total.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            const tax = subtotal * 0.08;
+            const grandTotal = subtotal + tax;
+            currentInvoiceData.grandTotal = grandTotal; // Store for email
+
+            previewContainer.innerHTML = \`
+                <div class="flex justify-between items-start mb-8">
+                    <div>
+                        <h1 class="text-3xl font-bold">\${data.yourCompany || data.yourName}</h1>
+                        <p class="text-slate-600">\${data.yourEmail}</p>
+                    </div>
+                    <div class="text-right">
+                        <h2 class="text-2xl font-bold text-slate-500">INVOICE</h2>
+                        <p>#INV\${data.id.substring(0, 6).toUpperCase()}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 class="font-bold mb-2">Bill To:</h3>
+                        <p>\${data.clientName}</p>
+                        <p>\${data.clientCompany || ''}</p>
+                        <p>\${data.clientEmail}</p>
+                    </div>
+                    <div class="text-right">
+                        <p><span class="font-bold">Invoice Date:</span> \${new Date(data.invoiceDate).toLocaleDateString()}</p>
+                        <p><span class="font-bold">Due Date:</span> \${new Date(data.dueDate).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                <table class="w-full mb-8">
+                    <thead><tr class="bg-slate-100">
+                        <th class="text-left p-2 font-bold">Description</th><th class="text-center p-2 font-bold">Quantity</th>
+                        <th class="text-right p-2 font-bold">Unit Price</th><th class="text-right p-2 font-bold">Total</th>
+                    </tr></thead>
+                    <tbody>\${itemsHtml}</tbody>
+                </table>
+                <div class="flex justify-end"><div class="w-full max-w-xs space-y-2">
+                    <div class="flex justify-between"><span class="font-bold">Subtotal:</span> <span>$\${subtotal.toFixed(2)}</span></div>
+                    <div class="flex justify-between"><span class="font-bold">Tax (8%):</span> <span>$\${tax.toFixed(2)}</span></div>
+                    <div class="flex justify-between text-xl font-bold border-t pt-2"><span>Grand Total:</span> <span>$\${grandTotal.toFixed(2)}</span></div>
+                </div></div>\`;
+            previewModal.classList.remove('hidden');
+        }
+
+        /**
+         * Handle form submission to create invoice
+         */
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            if (!isAuthReady) {
+                alert("Service is not ready. Please wait a moment and try again.");
+                return;
+            }
+
+            const items = [];
+            document.querySelectorAll('.item-row').forEach(row => {
+                items.push({
+                    desc: row.querySelector('.item-desc').value,
+                    qty: parseFloat(row.querySelector('.item-qty').value),
+                    price: parseFloat(row.querySelector('.item-price').value),
+                });
+            });
+
+            if (items.length === 0) {
+                alert("Please add at least one item to the invoice.");
+                return;
+            }
+
+            const invoiceData = {
+                yourName: document.getElementById('yourName').value,
+                yourCompany: document.getElementById('yourCompany').value,
+                yourEmail: document.getElementById('yourEmail').value,
+                clientName: document.getElementById('clientName').value,
+                clientCompany: document.getElementById('clientCompany').value,
+                clientEmail: document.getElementById('clientEmail').value,
+                invoiceDate: document.getElementById('invoiceDate').value,
+                dueDate: document.getElementById('dueDate').value,
+                items,
+                status: 'draft',
+                createdAt: serverTimestamp(),
+            };
+
+            try {
+                const invoicesCollection = collection(db, \`artifacts/\${appId}/public/data/invoices\`);
+                const docRef = await addDoc(invoicesCollection, invoiceData);
+                const finalData = { ...invoiceData, id: docRef.id };
+                showPreview(finalData);
+                invoiceForm.reset();
+                invoiceItemsContainer.innerHTML = '';
+                addInvoiceItem();
+            } catch(error) {
+                console.error("Error creating invoice: ", error);
+                alert("Failed to create invoice. Check console for details.");
+            }
+        }
+        
+        /**
+         * Handles printing the invoice.
+         */
+        function handlePrint() {
+            const previewContainer = previewModal.querySelector('.invoice-preview');
+            const printWindow = window.open('', '', 'height=800,width=800');
+            printWindow.document.write('<html><head><title>Print Invoice</title>');
+            printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+            printWindow.document.write('<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">');
+            printWindow.document.write('<style>body { -webkit-print-color-adjust: exact; font-family: "Arial", sans-serif; }</style>');
+            printWindow.document.write('</head><body class="p-10">');
+            printWindow.document.write(previewContainer.innerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+        }
+        
+        /**
+         * Composes and displays an email using the Gemini API.
+         */
+        async function handleComposeEmail() {
+            if (!currentInvoiceData) return;
+            emailComposerModal.classList.remove('hidden');
+            
+            const regenerateBtnOriginalText = regenerateEmailBtn.innerHTML;
+            regenerateEmailBtn.innerHTML = `<div class="loader"></div> Generating...`;
+            regenerateEmailBtn.disabled = true;
+            emailComposerStatus.textContent = "Generating email content with AI...";
+
+            const { clientName, grandTotal, dueDate, yourName, yourCompany } = currentInvoiceData;
+            const prompt = \`
+                Draft a polite and professional email to a client about an invoice.
+                - Client's name: \${clientName}
+                - Total amount due: $\${grandTotal.toFixed(2)}
+                - Due date: \${new Date(dueDate).toLocaleDateString()}
+                - My name/company: \${yourCompany || yourName}
+                The email should be friendly and clearly state the invoice amount and due date.
+                Do not include a subject line.
+            \`;
+
+            const generatedBody = await generateText(prompt);
+            emailBody.value = generatedBody;
+
+            regenerateEmailBtn.innerHTML = regenerateBtnOriginalText;
+            regenerateEmailBtn.disabled = false;
+            emailComposerStatus.textContent = "";
+        }
+
+        /**
+         * Creates a mailto link with the composed email body.
+         */
+        function handleSendEmail() {
+            if (!currentInvoiceData) return;
+            const subject = \`Invoice from \${currentInvoiceData.yourCompany || currentInvoiceData.yourName}\`;
+            const body = emailBody.value;
+            window.location.href = \`mailto:\${currentInvoiceData.clientEmail}?subject=\${encodeURIComponent(subject)}&body=\${encodeURIComponent(body)}\`;
+            emailComposerModal.classList.add('hidden');
+        }
+
+        // --- Initial Setup & Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase();
+            
+            const today = new Date().toISOString().split('T')[0];
+            const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            document.getElementById('invoiceDate').value = today;
+            document.getElementById('dueDate').value = thirtyDaysFromNow;
+
+            addInvoiceItem();
+            addItemBtn.addEventListener('click', addInvoiceItem);
+            invoiceForm.addEventListener('submit', handleFormSubmit);
+
+            closePreviewBtn.addEventListener('click', () => previewModal.classList.add('hidden'));
+            printBtn.addEventListener('click', handlePrint);
+            
+            // AI Feature Listeners
+            composeEmailBtn.addEventListener('click', handleComposeEmail);
+            regenerateEmailBtn.addEventListener('click', handleComposeEmail); // Re-uses the same function
+            closeEmailComposerBtn.addEventListener('click', () => emailComposerModal.classList.add('hidden'));
+            sendEmailBtn.addEventListener('click', handleSendEmail);
+        });
+
+    </script>
+</body>
+</html>
