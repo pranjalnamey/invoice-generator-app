@@ -1,26 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <script>
-    try {
-        const sessionData = localStorage.getItem('invoice_pro_session');
-        if (!sessionData) {
-            // No session found, redirect to a public sales page.
-            window.location.href = 'https://www.learnandrule.com/items/inv-gen'; 
-        }
-
-        const session = JSON.parse(sessionData);
-        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-        if ((Date.now() - session.loginTime) > thirtyDays) {
-             // Session is expired.
-            localStorage.removeItem('invoice_pro_session');
-            window.location.href = 'https://www.learnandrule.com/items/inv-gen';
-        }
-    } catch (e) {
-         // If any error, assume no session and redirect.
-         window.location.href = 'https://www.learnandrule.com/items/inv-gen';
-    }
-</script>	
+<head>	
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Professional Invoice Generator</title>
