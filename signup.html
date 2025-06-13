@@ -1,11 +1,23 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Signup</title>
-</head>
+<head><title>Signup</title></head>
 <body>
-  <h2>Create Your Account</h2>
-  <p>To access the tool, please sign up with your email and create a password.</p>
-  <a href="/.auth/login/aad?post_login_redirect_uri=/tool">Click here to Sign Up</a>
+  <h2>Sign Up</h2>
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button onclick="signup()">Sign Up</button>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"></script>
+  <script src="firebase-config.js"></script>
+  <script>
+    function signup() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => window.location.href = "tool.html")
+        .catch(err => alert(err.message));
+    }
+  </script>
 </body>
 </html>
