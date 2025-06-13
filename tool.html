@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html>
-<head><title>Tool</title>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Professional Invoice Generator</title>
@@ -52,101 +52,76 @@
     </style>
 </head>
 <body>
-<div id="toolContent" style="display: none;">
-  <h2>Welcome to the Invoice Generator Tool</h2>
+    <!-- Main App Content (Initially Hidden) -->
+    <div id="toolContent" style="display: none;">
+        <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+            <header class="mb-10 text-center">
+                <h1 class="text-4xl font-bold text-gray-800">InvoicePro</h1>
+                <p class="mt-2 text-lg text-gray-500">Create & Manage Invoices with AI</p>
+            </header>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyByurVc4iWvu1CsoeLSyeErKszQhafCk0w",
-      authDomain: "invoice-tool-access.firebaseapp.com",
-      projectId: "invoice-tool-access"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      console.log("✅ Authenticated user:", user.email);
-      document.getElementById("toolContent").style.display = "block";
-    } else {
-      console.log("⛔ Not logged in. Redirecting...");
-      window.location.href = "login.html";
-    }
-  });
-</script>
-
-<div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <header class="mb-10 text-center">
-            <h1 class="text-4xl font-bold text-gray-800">InvoicePro</h1>
-            <p class="mt-2 text-lg text-gray-500">Create & Manage Invoices with AI</p>
-        </header>
-
-        <main class="space-y-12">
-            <!-- Invoice Creation Form -->
-            <div id="invoice-create-section">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-3">Create an Invoice</h2>
-                <form id="invoiceForm" class="space-y-8 bg-white p-8 rounded-xl shadow-lg">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Bill From</h3>
-                            <div class="space-y-4">
-                                <input type="text" id="senderName" placeholder="Your Name / Company" class="w-full p-2 border rounded-md" required>
-                                <input type="text" id="senderAddress" placeholder="Your Address" class="w-full p-2 border rounded-md" required>
-                                <input type="email" id="senderEmail" placeholder="Your Email" class="w-full p-2 border rounded-md" required>
+            <main class="space-y-12">
+                <!-- Invoice Creation Form -->
+                <div id="invoice-create-section">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-3">Create an Invoice</h2>
+                    <form id="invoiceForm" class="space-y-8 bg-white p-8 rounded-xl shadow-lg">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Bill From</h3>
+                                <div class="space-y-4">
+                                    <input type="text" id="senderName" placeholder="Your Name / Company" class="w-full p-2 border rounded-md" required>
+                                    <input type="text" id="senderAddress" placeholder="Your Address" class="w-full p-2 border rounded-md" required>
+                                    <input type="email" id="senderEmail" placeholder="Your Email" class="w-full p-2 border rounded-md" required>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Bill To</h3>
+                                <div class="space-y-4">
+                                        <input type="text" id="clientName" placeholder="Client's Name / Company" class="w-full p-2 border rounded-md" required>
+                                        <input type="text" id="clientAddress" placeholder="Client's Address" class="w-full p-2 border rounded-md" required>
+                                        <input type="email" id="clientEmail" placeholder="Client's Email" class="w-full p-2 border rounded-md" required>
+                                </div>
                             </div>
                         </div>
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Bill To</h3>
-                            <div class="space-y-4">
-                                    <input type="text" id="clientName" placeholder="Client's Name / Company" class="w-full p-2 border rounded-md" required>
-                                    <input type="text" id="clientAddress" placeholder="Client's Address" class="w-full p-2 border rounded-md" required>
-                                    <input type="email" id="clientEmail" placeholder="Client's Email" class="w-full p-2 border rounded-md" required>
-                            </div>
+                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Invoice Details</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <input type="date" id="invoiceDate" class="w-full p-2 border rounded-md" required>
+                                <input type="date" id="dueDate" class="w-full p-2 border rounded-md" required>
+                                </div>
                         </div>
-                    </div>
-                    <div>
-                            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Invoice Details</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <input type="date" id="invoiceDate" class="w-full p-2 border rounded-md" required>
-                            <input type="date" id="dueDate" class="w-full p-2 border rounded-md" required>
-                            </div>
-                    </div>
-                    <div>
-                            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Items</h3>
-                            <div id="invoiceItemsContainer" class="space-y-3"></div>
-                            <button type="button" id="addItemBtn" class="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-800">+ Add Item</button>
-                    </div>
-                    <div class="flex justify-end space-x-4">
-                        <button type="button" id="resetFormBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">Clear Form</button>
-                        <button type="submit" class="px-6 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Create & Add to List</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Invoice List View -->
-            <div id="invoice-list-section">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-3">Existing Invoices</h2>
-                 <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                    <table class="min-w-full leading-normal">
-                        <thead>
-                            <tr>
-                                <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                                <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Client</th>
-                                <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                                <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Due Date</th>
-                                <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="invoice-table-body"></tbody>
-                    </table>
+                        <div>
+                                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Items</h3>
+                                <div id="invoiceItemsContainer" class="space-y-3"></div>
+                                <button type="button" id="addItemBtn" class="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-800">+ Add Item</button>
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" id="resetFormBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">Clear Form</button>
+                            <button type="submit" class="px-6 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Create & Add to List</button>
+                        </div>
+                    </form>
                 </div>
-            </div>
-        </main>
+
+                <!-- Invoice List View -->
+                <div id="invoice-list-section">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-3">Existing Invoices</h2>
+                    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                        <table class="min-w-full leading-normal">
+                            <thead>
+                                <tr>
+                                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Client</th>
+                                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Due Date</th>
+                                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoice-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
         
     <!-- Invoice Preview Modal -->
@@ -179,8 +154,38 @@
         </div>
     </div>
 
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyByurVc4iWvu1CsoeLSyeErKszQhafCk0w",
+      authDomain: "invoice-tool-access.firebaseapp.com",
+      projectId: "invoice-tool-access"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            console.log("✅ Authenticated user:", user.email);
+            document.getElementById("toolContent").style.display = "block";
+            // Initialize the main app only after the user is authenticated and content is visible
+            initializeApp();
+        } else {
+            console.log("⛔ Not logged in. Redirecting...");
+            // In a real scenario, you would redirect to a login page.
+            // For this example, we'll just show an alert.
+            alert("You are not logged in. Please log in to use this tool.");
+            // window.location.href = "login.html";
+        }
+    });
+</script>
+
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+// Wrap all app logic in a function to be called after authentication
+function initializeApp() {
     // --- State Management ---
     let invoices = [
         { id: 'INV001', client: { name: 'Stark Industries', address: '1 Stark Tower, NYC', email: 'tony@stark.com' }, amount: 1250.00, dueDate: '2025-07-15', status: 'paid', sender: { name: 'InvoicePro Inc.', address: '123 Dev Lane, Coder City', email: 'billing@invoicepro.com' }, items: [{ desc: 'Arc Reactor Maintenance', qty: 1, price: 1250.00 }], invoiceDate: '2025-06-15' },
@@ -415,11 +420,9 @@ document.addEventListener('DOMContentLoaded', () => {
         printWindow.document.write('<html><head><title>Print Invoice</title>');
         printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
         printWindow.document.write('<style>' + document.querySelector('style').innerHTML + '</style>');
-        printWindow.document.write('</head><body>
-<div id="toolContent" style="display: none;">');
+        printWindow.document.write('</head><body>');
         printWindow.document.write('<div class="invoice-box">' + content + '</div>');
-        printWindow.document.write('</div>
-</body></html>');
+        printWindow.document.write('</body></html>');
         printWindow.document.close();
         setTimeout(() => { 
             printWindow.focus();
@@ -447,9 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('invoiceDate').value = today;
     document.getElementById('dueDate').value = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-});
+}
 </script>
-
-</div>
 </body>
 </html>
