@@ -52,6 +52,7 @@
     </style>
 </head>
 <body>
+<div id="toolContent" style="display: none;">
   <h2>Welcome to the Invoice Generator Tool</h2>
 
   <script type="module">
@@ -67,17 +68,17 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setTimeout(() => {
-          window.location.href = "login.html";
-        }, 300);
-      }
-    });
-
-
-
-  </script>
+    
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log("✅ Authenticated user:", user.email);
+      document.getElementById("toolContent").style.display = "block";
+    } else {
+      console.log("⛔ Not logged in. Redirecting...");
+      window.location.href = "login.html";
+    }
+  });
+</script>
 
 <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <header class="mb-10 text-center">
@@ -414,9 +415,11 @@ document.addEventListener('DOMContentLoaded', () => {
         printWindow.document.write('<html><head><title>Print Invoice</title>');
         printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
         printWindow.document.write('<style>' + document.querySelector('style').innerHTML + '</style>');
-        printWindow.document.write('</head><body>');
+        printWindow.document.write('</head><body>
+<div id="toolContent" style="display: none;">');
         printWindow.document.write('<div class="invoice-box">' + content + '</div>');
-        printWindow.document.write('</body></html>');
+        printWindow.document.write('</div>
+</body></html>');
         printWindow.document.close();
         setTimeout(() => { 
             printWindow.focus();
@@ -447,5 +450,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+</div>
 </body>
 </html>
