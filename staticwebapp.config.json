@@ -1,0 +1,23 @@
+
+{
+  "routes": [
+    {
+      "route": "/tool",
+      "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/login",
+      "serve": "/login.html"
+    }
+  ],
+  "auth": {
+    "identityProviders": {
+      "azureActiveDirectory": {
+        "registration": {
+          "openIdIssuer": "https://<your-tenant-name>.b2clogin.com/<tenant-id>/v2.0/",
+          "clientId": "<your-client-id>"
+        }
+      }
+    }
+  }
+}
