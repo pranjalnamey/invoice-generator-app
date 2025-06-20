@@ -1,42 +1,88 @@
-
 <!DOCTYPE html>
-<html>
-<head><title>Login</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Secure Login</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+    .login-container h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .login-container input,
+    .login-container button {
+      width: 90%;
+      max-width: 300px;
+      display: block;
+      margin: 10px auto;
+      padding: 12px 15px;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    .login-container input {
+      border: 1px solid #ccc;
+    }
+    .login-container button {
+      background: #667eea;
+      border: none;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .login-container button:hover {
+      background: #5a67d8;
+    }
+    .login-container p {
+      margin-top: 15px;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
 <body>
-  <h2>Login</h2>
-  <input type="email" id="email" placeholder="Email"><br>
-  <input type="password" id="password" placeholder="Password"><br>
-  <button onclick="login()">Login</button>
+  <div class="login-container">
+    <h2>Login to Access Your Tool</h2>
+    <input type="text" id="username" placeholder="Email or Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="login()">Login</button>
+    <p>Access restricted to paid customers only</p>
+  </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyByurVc4iWvu1CsoeLSyeErKszQhafCk0w",
-      authDomain: "invoice-tool-access.firebaseapp.com",
-      projectId: "invoice-tool-access"
+  <script>
+    const allowedUsers = {
+      "user1@example.com": "password123",
+      "user2@example.com": "password456",
+      "user3@example.com": "password789"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    import { setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-
-    setPersistence(auth, browserLocalPersistence);
-	
-
-    window.login = function () {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-
-      signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-          window.location.href = "tool.html";
-        })
-        .catch((error) => {
-          alert("Error: " + error.message);
-        });
-    };
+    function login() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      if (allowedUsers[username] && allowedUsers[username] === password) {
+        localStorage.setItem("loggedInUser", username);
+        window.location.href = "tool.html";
+      } else {
+        alert("Invalid username or password!");
+      }
+    }
   </script>
 </body>
 </html>

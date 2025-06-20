@@ -1,31 +1,19 @@
 
 <!DOCTYPE html>
-<html>
-<head><title>Tool</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Secure Access to Tool</title>
+</head>
 <body>
-  <h2>Welcome to the Invoice Generator Tool</h2>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyByurVc4iWvu1CsoeLSyeErKszQhafCk0w",
-      authDomain: "invoice-tool-access.firebaseapp.com",
-      projectId: "invoice-tool-access"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = "login.html";
-      }
-    });
+  <script>
+    const user = localStorage.getItem("loggedInUser");
+    if (!user) {
+      window.location.href = "login.html";
+    }
   </script>
-
-  <!-- Tool Iframe or content goes here -->
+  <h2>Welcome to Your Invoice Tool</h2>
   <iframe src="https://salmon-island-038062f10.6.azurestaticapps.net" width="100%" height="800px" frameborder="0"></iframe>
 </body>
 </html>
