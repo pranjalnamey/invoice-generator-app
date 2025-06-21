@@ -70,6 +70,14 @@
                                 <input type="text" id="senderName" placeholder="Your Name / Company" class="w-full p-2 border rounded-md" required>
                                 <input type="text" id="senderAddress" placeholder="Your Address" class="w-full p-2 border rounded-md" required>
                                 <input type="email" id="senderEmail" placeholder="Your Email" class="w-full p-2 border rounded-md" required>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-700">Company Logo</label>
+                                    <div class="mt-1 flex items-center gap-4">
+                                        <img id="logo-preview" src="https://placehold.co/100x40/f0f0f0/cccccc?text=Logo" alt="Logo Preview" class="h-10 bg-gray-100 rounded">
+                                        <input type="file" id="senderLogo" accept="image/*" class="hidden">
+                                        <button type="button" id="uploadLogoBtn" class="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50">Upload Logo</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div>
@@ -152,10 +160,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- State Management ---
     let invoices = [
-        { id: 'INV001', client: { name: 'Stark Industries', address: '1 Stark Tower, NYC', email: 'tony@stark.com' }, amount: 1250.00, dueDate: '2025-07-15', status: 'paid', sender: { name: 'InvoicePro Inc.', address: '123 Dev Lane, Coder City', email: 'billing@invoicepro.com' }, items: [{ desc: 'Arc Reactor Maintenance', qty: 1, price: 1250.00 }], invoiceDate: '2025-06-15' },
-        { id: 'INV002', client: { name: 'Wayne Enterprises', address: '1007 Mountain Drive, Gotham', email: 'bruce@wayne.com' }, amount: 3400.50, dueDate: '2025-06-20', status: 'sent', sender: { name: 'InvoicePro Inc.', address: '123 Dev Lane, Coder City', email: 'billing@invoicepro.com' }, items: [{ desc: 'Custom Batarang Fabrication', qty: 100, price: 34.005 }], invoiceDate: '2025-05-20' },
+        { id: 'INV001', client: { name: 'Stark Industries', address: '1 Stark Tower, NYC', email: 'tony@stark.com' }, amount: 1250.00, dueDate: '2025-07-15', status: 'paid', sender: { name: 'InvoicePro Inc.', address: '123 Dev Lane, Coder City', email: 'billing@invoicepro.com', logoData: null }, items: [{ desc: 'Arc Reactor Maintenance', qty: 1, price: 1250.00 }], invoiceDate: '2025-06-15' },
+        { id: 'INV002', client: { name: 'Wayne Enterprises', address: '1007 Mountain Drive, Gotham', email: 'bruce@wayne.com' }, amount: 3400.50, dueDate: '2025-06-20', status: 'sent', sender: { name: 'InvoicePro Inc.', address: '123 Dev Lane, Coder City', email: 'billing@invoicepro.com', logoData: null }, items: [{ desc: 'Custom Batarang Fabrication', qty: 100, price: 34.005 }], invoiceDate: '2025-05-20' },
     ];
     let currentInvoice = null;
+    let logoBase64 = null;
 
     // --- DOM Elements ---
     const invoiceListContainer = document.getElementById('invoice-list-container');
@@ -163,6 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const itemsContainer = document.getElementById('invoiceItemsContainer');
     const addItemBtn = document.getElementById('addItemBtn');
     const resetFormBtn = document.getElementById('resetFormBtn');
+    const logoUploadInput = document.getElementById('senderLogo');
+    const uploadLogoBtn = document.getElementById('uploadLogoBtn');
+    const logoPreview = document.getElementById('logo-preview');
     
     const previewModal = document.getElementById('previewModal');
     const closePreviewBtn = document.getElementById('closePreviewBtn');
@@ -285,6 +297,8 @@ document.addEventListener('DOMContentLoaded', () => {
         invoiceForm.reset();
         itemsContainer.innerHTML = '';
         addInvoiceItemRow();
+        logoBase64 = null;
+        logoPreview.src = 'https://placehold.co/100x40/f0f0f0/cccccc?text=Logo';
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('invoiceDate').value = today;
         document.getElementById('dueDate').value = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -294,7 +308,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const newInvoice = {
             id: 'INV' + String(Date.now()).slice(-4),
-            sender: { name: document.getElementById('senderName').value, address: document.getElementById('senderAddress').value, email: document.getElementById('senderEmail').value },
+            sender: { 
+                name: document.getElementById('senderName').value, 
+                address: document.getElementById('senderAddress').value, 
+                email: document.getElementById('senderEmail').value,
+                logoData: logoBase64 
+            },
             client: { name: document.getElementById('clientName').value, address: document.getElementById('clientAddress').value, email: document.getElementById('clientEmail').value },
             invoiceDate: document.getElementById('invoiceDate').value,
             dueDate: document.getElementById('dueDate').value,
@@ -329,11 +348,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="text-align: right;">$${(item.qty * item.price).toFixed(2)}</td>
             </tr>
         `).join('');
+        
+        const logoHtml = currentInvoice.sender.logoData 
+            ? `<img src="${currentInvoice.sender.logoData}" style="width:100%; max-width:200px; max-height:80px;" alt="Company Logo">`
+            : `<h1 style="font-size: 30px; font-weight: bold;">${currentInvoice.sender.name}</h1>`;
 
         document.getElementById('invoice-preview-content').innerHTML = `
             <table cellpadding="0" cellspacing="0">
                 <tr class="top"><td colspan="2"><table><tr>
-                    <td class="title"><img src="https://placehold.co/300x100/667eea/ffffff?text=InvoicePro" style="width:100%; max-width:300px;" alt="Logo"></td>
+                    <td class="title">${logoHtml}</td>
                     <td style="text-align: right;">Invoice #: ${currentInvoice.id}<br>Created: ${new Date(currentInvoice.invoiceDate).toLocaleDateString()}<br>Due: ${new Date(currentInvoice.dueDate).toLocaleDateString()}</td>
                 </tr></table></td></tr>
                 <tr class="information"><td colspan="2"><table><tr>
@@ -404,8 +427,24 @@ document.addEventListener('DOMContentLoaded', () => {
             printWindow.close();
         }, 1000);
     }
-
+    
     // --- Event Listeners ---
+    uploadLogoBtn.addEventListener('click', () => {
+        logoUploadInput.click();
+    });
+
+    logoUploadInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoBase64 = e.target.result;
+                logoPreview.src = logoBase64;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
     addItemBtn.addEventListener('click', addInvoiceItemRow);
     resetFormBtn.addEventListener('click', resetInvoiceForm);
     
