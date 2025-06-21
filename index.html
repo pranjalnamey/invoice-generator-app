@@ -122,10 +122,10 @@
     <div id="previewModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-4xl max-h-full overflow-y-auto">
             <div class="invoice-box" id="invoice-preview-content"></div>
-            <div class="mt-6 flex justify-end items-center space-x-3">
-                <button id="closePreviewBtn" class="px-6 py-2 rounded-lg bg-gray-300 hover:bg-gray-400">Close</button>
-                <button id="composeEmailBtn" class="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 flex items-center gap-2">Compose Email ✨</button>
-                <button id="printBtn" class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Print / Download PDF</button>
+            <div class="mt-6 flex flex-col sm:flex-row sm:justify-end sm:items-center gap-3">
+                <button id="composeEmailBtn" class="w-full sm:w-auto px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 flex items-center justify-center gap-2">Compose Email ✨</button>
+                <button id="printBtn" class="w-full sm:w-auto px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Print / Download PDF</button>
+                <button id="closePreviewBtn" class="w-full sm:w-auto px-6 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 sm:mt-0">Close</button>
             </div>
         </div>
     </div>
@@ -138,12 +138,12 @@
                 <textarea id="emailBody" class="w-full h-64 p-3 border rounded-md"></textarea>
                 <div id="emailComposerStatus" class="text-sm text-slate-500 h-5 mt-2"></div>
                 </div>
-                <div class="p-4 bg-slate-50 border-t flex justify-between items-center">
-                <button id="regenerateEmailBtn" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 flex items-center gap-2">Regenerate ✨</button>
-                <div>
-                    <button id="closeEmailComposerBtn" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 mr-2">Cancel</button>
-                    <button id="sendEmailBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Send with Email Client</button>
-                </div>
+                <div class="p-4 bg-slate-50 border-t flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <button id="regenerateEmailBtn" class="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 flex items-center justify-center gap-2">Regenerate ✨</button>
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        <button id="closeEmailComposerBtn" class="w-1/2 sm:w-auto px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">Cancel</button>
+                        <button id="sendEmailBtn" class="w-1/2 sm:w-auto flex-grow px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Send</button>
+                    </div>
                 </div>
         </div>
     </div>
