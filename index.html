@@ -69,6 +69,7 @@
                             <div class="space-y-4">
                                 <input type="text" id="senderName" placeholder="Your Name / Company" class="w-full p-2 border rounded-md" required>
                                 <input type="text" id="senderAddress" placeholder="Your Address" class="w-full p-2 border rounded-md" required>
+                                <select id="senderCountry" class="w-full p-2 border rounded-md bg-white" required></select>
                                 <input type="email" id="senderEmail" placeholder="Your Email" class="w-full p-2 border rounded-md" required>
                                 <div>
                                     <label class="text-sm font-medium text-gray-700">Company Logo</label>
@@ -85,6 +86,7 @@
                             <div class="space-y-4">
                                     <input type="text" id="clientName" placeholder="Client's Name / Company" class="w-full p-2 border rounded-md" required>
                                     <input type="text" id="clientAddress" placeholder="Client's Address" class="w-full p-2 border rounded-md" required>
+                                    <select id="clientCountry" class="w-full p-2 border rounded-md bg-white" required></select>
                                     <input type="email" id="clientEmail" placeholder="Client's Email" class="w-full p-2 border rounded-md" required>
                             </div>
                         </div>
@@ -158,10 +160,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- State Management ---
+    // --- Data and State Management ---
+    const TAX_RATES = { "US": 8.0, "CA": 13.0, "GB": 20.0, "AU": 10.0, "IN": 18.0, "DE": 19.0, "FR": 20.0, "JP": 10.0, "BR": 17.0, "RU": 20.0, "CN": 13.0, "ZA": 15.0, "MX": 16.0, "CH": 7.7, "SG": 8.0, "NZ": 15.0, "OTHER": 0.0 };
+    const COUNTRIES = [ { name: "United States", code: "US" }, { name: "Canada", code: "CA" }, { name: "United Kingdom", code: "GB" }, { name: "Australia", code: "AU" }, { name: "India", code: "IN" }, { name: "Germany", code: "DE" }, { name: "France", code: "FR" }, { name: "Japan", code: "JP" }, { name: "Brazil", code: "BR" }, { name: "Russia", code: "RU" }, { name: "China", code: "CN" }, { name: "South Africa", code: "ZA" }, { name: "Mexico", code: "MX" }, { name: "Switzerland", code: "CH" }, { name: "Singapore", code: "SG" }, { name: "New Zealand", code: "NZ" }, { name: "-----------------", code: "", disabled: true }, { name: "Afghanistan", code: "AF" }, { name: "Albania", code: "AL" }, { name: "Algeria", code: "DZ" }, { name: "Argentina", code: "AR" }, { name: "Austria", code: "AT" }, { name: "Bangladesh", code: "BD" }, { name: "Belgium", code: "BE" }, { name: "Chile", code: "CL" }, { name: "Colombia", code: "CO" }, { name: "Denmark", code: "DK" }, { name: "Egypt", code: "EG" }, { name: "Finland", code: "FI" }, { name: "Greece", code: "GR" }, { name: "Indonesia", code: "ID" }, { name: "Ireland", code: "IE" }, { name: "Israel", code: "IL" }, { name: "Italy", code: "IT" }, { name: "Malaysia", code: "MY" }, { name: "Netherlands", code: "NL" }, { name: "Nigeria", code: "NG" }, { name: "Norway", code: "NO" }, { name: "Pakistan", code: "PK" }, { name: "Peru", code: "PE" }, { name: "Philippines", code: "PH" }, { name: "Poland", code: "PL" }, { name: "Portugal", code: "PT" }, { name: "Saudi Arabia", code: "SA" }, { name: "South Korea", code: "KR" }, { name: "Spain", code: "ES" }, { name: "Sweden", code: "SE" }, { name: "Thailand", code: "TH" }, { name: "Turkey", code: "TR" }, { name: "Ukraine", code: "UA" }, { name: "United Arab Emirates", code: "AE" }, { name: "Vietnam", code: "VN" }, { name: "Other", code: "OTHER" } ].sort((a, b) => a.name.localeCompare(b.name));
+
     let invoices = [
-        { id: 'INV001', client: { name: 'Stark Industries', address: '1 Stark Tower, NYC', email: 'tony@stark.com' }, amount: 1250.00, dueDate: '2023-07-15', status: 'paid', sender: { name: 'InvoicePro Inc.', address: '123 Dev Lane, Coder City', email: 'billing@invoicepro.com', logoData: null }, items: [{ desc: 'Arc Reactor Maintenance', qty: 1, price: 1250.00 }], invoiceDate: '2023-06-15' },
-        { id: 'INV002', client: { name: 'Wayne Enterprises', address: '1007 Mountain Drive, Gotham', email: 'bruce@wayne.com' }, amount: 3400.50, dueDate: '2023-06-20', status: 'sent', sender: { name: 'InvoicePro Inc.', address: '123 Dev Lane, Coder City', email: 'billing@invoicepro.com', logoData: null }, items: [{ desc: 'Custom Batarang Fabrication', qty: 100, price: 34.005 }], invoiceDate: '2023-05-20' },
+        { id: 'INV001', client: { name: 'Stark Industries', address: '1 Stark Tower, NYC', email: 'tony@stark.com', country: 'US' }, amount: 1350.00, tax: 100.00, subtotal: 1250.00, dueDate: '2023-07-15', status: 'paid', sender: { name: 'InvoicePro Inc.', address: '123 Dev Lane, Coder City', email: 'billing@invoicepro.com', logoData: null, country: 'US' }, items: [{ desc: 'Arc Reactor Maintenance', qty: 1, price: 1250.00 }], invoiceDate: '2023-06-15' },
     ];
     let currentInvoice = null;
     let logoBase64 = null;
@@ -175,6 +179,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoUploadInput = document.getElementById('senderLogo');
     const uploadLogoBtn = document.getElementById('uploadLogoBtn');
     const logoPreview = document.getElementById('logo-preview');
+    const senderCountrySelect = document.getElementById('senderCountry');
+    const clientCountrySelect = document.getElementById('clientCountry');
     
     const previewModal = document.getElementById('previewModal');
     const closePreviewBtn = document.getElementById('closePreviewBtn');
@@ -195,25 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const apiKey = "AIzaSyAcoW3XuBecke18umRlZVmz9T8OC5TiEXo"; // IMPORTANT: Replace with your own API key for live deployment
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
         try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) {
-                let errorDetails = `Status: ${response.status}`;
-                try {
-                    const errorBody = await response.json();
-                    errorDetails = errorBody.error.message || JSON.stringify(errorBody);
-                } catch (e) { /* Ignore if response body is not JSON */ }
-                throw new Error(errorDetails);
-            }
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
             const result = await response.json();
-            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
-                return result.candidates[0].content.parts[0].text;
-            } else {
-                 throw new Error("Invalid API response structure.");
-            }
+            return result.candidates[0].content.parts[0].text;
         } catch (error) {
             console.error("Error calling Gemini API:", error);
             return `Error: Could not generate content. (${error.message})`;
@@ -221,13 +212,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- Invoice Management ---
+    function populateCountryDropdowns() {
+        const optionsHtml = COUNTRIES.map(c => `<option value="${c.code}" ${c.disabled ? 'disabled' : ''}>${c.name}</option>`).join('');
+        senderCountrySelect.innerHTML = optionsHtml;
+        clientCountrySelect.innerHTML = optionsHtml;
+    }
+
     function renderInvoices() {
-        if (!invoiceListContainer) return;
-        
-        if (invoices.length === 0) {
-            invoiceListContainer.innerHTML = '<p class="text-center py-10 text-gray-500">No invoices yet.</p>';
-            return;
-        }
         invoiceListContainer.innerHTML = invoices.map(inv => {
             const today = new Date();
             today.setHours(0,0,0,0);
@@ -239,33 +230,14 @@ document.addEventListener('DOMContentLoaded', () => {
             
             return `
             <div data-id="${inv.id}" class="bg-white md:grid md:grid-cols-6 md:gap-4 items-center p-4 border-b border-gray-200 flex flex-col space-y-2 md:space-y-0 rounded-lg shadow-sm md:shadow-none md:rounded-none">
-                <!-- Mobile Labels -->
-                <div class="w-full flex justify-between md:hidden">
-                    <span class="font-semibold text-gray-500">Client</span>
-                    <span class="text-gray-900">${inv.client.name}</span>
-                </div>
-                 <div class="w-full flex justify-between md:hidden">
-                    <span class="font-semibold text-gray-500">Status</span>
-                    <span class="status-badge status-${displayStatus}">${displayStatus}</span>
-                </div>
-
-                <!-- Desktop / Aligned Columns -->
                 <div class="hidden md:block"><span class="status-badge status-${displayStatus}">${displayStatus}</span></div>
                 <div class="hidden md:block"><p class="text-gray-900 whitespace-no-wrap">${inv.client.name}</p></div>
-                <div class="w-full flex justify-between md:block">
-                    <span class="font-semibold text-gray-500 md:hidden">Amount</span>
-                    <p class="text-gray-900 whitespace-no-wrap md:text-left">$${inv.amount.toFixed(2)}</p>
-                </div>
-                <div class="w-full flex justify-between md:block">
-                     <span class="font-semibold text-gray-500 md:hidden">Due Date</span>
-                    <p class="text-gray-900 whitespace-no-wrap md:text-left">${new Date(inv.dueDate).toLocaleDateString()}</p>
-                </div>
+                <div class="w-full flex justify-between md:block"><span class="font-semibold text-gray-500 md:hidden">Amount</span><p class="text-gray-900 whitespace-no-wrap md:text-left">$${inv.amount.toFixed(2)}</p></div>
+                <div class="w-full flex justify-between md:block"><span class="font-semibold text-gray-500 md:hidden">Due Date</span><p class="text-gray-900 whitespace-no-wrap md:text-left">${new Date(inv.dueDate).toLocaleDateString()}</p></div>
                 <div class="w-full md:col-span-2 md:text-right pt-2 md:pt-0 flex flex-col sm:flex-row sm:items-center gap-2 justify-end">
                     <select class="status-selector text-xs py-2 px-3 border border-gray-300 rounded-md bg-white w-full sm:w-auto">
-                        <option value="" disabled ${inv.status === 'draft' ? '' : 'selected'}>Mark As...</option>
-                        <option value="sent" ${inv.status === 'sent' ? 'selected' : ''}>Sent</option>
-                        <option value="paid" ${inv.status === 'paid' ? 'selected' : ''}>Paid</option>
-                        <option value="draft" ${inv.status === 'draft' ? 'selected' : ''}>Draft</option>
+                        <option value="" disabled selected>Mark As...</option>
+                        <option value="sent">Sent</option><option value="paid">Paid</option><option value="draft">Draft</option>
                     </select>
                     <button class="view-btn text-indigo-600 hover:text-indigo-900 font-semibold py-2 px-4 rounded-md w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100">View Details</button>
                 </div>
@@ -277,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const invoice = invoices.find(inv => inv.id === invoiceId);
         if (invoice) {
             invoice.status = newStatus;
-            renderInvoices(); // Re-render the list to show the change
+            renderInvoices(); 
         }
     }
     
@@ -285,42 +257,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'grid grid-cols-12 gap-2 item-row items-center';
         itemDiv.innerHTML = `
-            <div class="relative col-span-7">
-                <input type="text" placeholder="Item Description" class="item-desc w-full p-2 border rounded-md" required>
-                <button type="button" class="gemini-btn absolute right-2 top-1/2 -translate-y-1/2 text-indigo-500 hover:text-indigo-700 font-bold hidden" title="Generate with AI">✨</button>
-            </div>
+            <div class="relative col-span-7"><input type="text" placeholder="Item Description" class="item-desc w-full p-2 border rounded-md" required><button type="button" class="gemini-btn absolute right-2 top-1/2 -translate-y-1/2 text-indigo-500 hover:text-indigo-700 font-bold hidden" title="Generate with AI">✨</button></div>
             <input type="number" placeholder="Qty" value="1" min="1" class="item-qty col-span-2 p-2 border rounded-md" required>
             <input type="number" placeholder="Price" min="0" step="0.01" class="item-price col-span-2 p-2 border rounded-md" required>
             <button type="button" class="removeItemBtn col-span-1 text-red-500 hover:text-red-700 text-2xl font-bold">&times;</button>
         `;
         itemsContainer.appendChild(itemDiv);
-        
-        const descInput = itemDiv.querySelector('.item-desc');
-        const geminiBtn = itemDiv.querySelector('.gemini-btn');
-        
-        descInput.addEventListener('input', () => { geminiBtn.style.display = descInput.value.trim() ? 'block' : 'none'; });
-
-        geminiBtn.addEventListener('click', async (e) => {
-            const btn = e.currentTarget;
-            btn.innerHTML = `<div class="loader"></div>`;
-            btn.disabled = true;
-            const prompt = `Expand this brief service description into a professional one-line item for an invoice: "${descInput.value}". Keep it concise and professional.`;
-            const newDescription = (await generateText(prompt));
-            if (!newDescription.startsWith("Error:")) {
-                descInput.value = newDescription.replace(/"/g, '');
-            }
-            btn.innerHTML = '✨';
-            btn.disabled = false;
-        });
-
+        itemDiv.querySelector('.gemini-btn').addEventListener('click', onGeminiClick);
         itemDiv.querySelector('.removeItemBtn').addEventListener('click', () => itemDiv.remove());
+    }
+    
+    async function onGeminiClick(e) {
+        const btn = e.currentTarget;
+        const descInput = btn.previousElementSibling;
+        btn.innerHTML = `<div class="loader"></div>`;
+        btn.disabled = true;
+        const prompt = `Expand this brief service description into a professional one-line item for an invoice: "${descInput.value}". Keep it concise.`;
+        const newDescription = (await generateText(prompt));
+        if (!newDescription.startsWith("Error:")) {
+            descInput.value = newDescription.replace(/"/g, '');
+        }
+        btn.innerHTML = '✨';
+        btn.disabled = false;
     }
 
     function resetInvoiceForm() {
-        invoiceForm.reset();
-        itemsContainer.innerHTML = '';
-        addInvoiceItemRow();
-        logoBase64 = null;
+        invoiceForm.reset(); itemsContainer.innerHTML = ''; addInvoiceItemRow(); logoBase64 = null;
         logoPreview.src = 'https://placehold.co/100x40/f0f0f0/cccccc?text=Logo';
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('invoiceDate').value = today;
@@ -329,35 +291,28 @@ document.addEventListener('DOMContentLoaded', () => {
     
     invoiceForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const newInvoice = {
-            id: 'INV' + String(Date.now()).slice(-4),
-            sender: { 
-                name: document.getElementById('senderName').value, 
-                address: document.getElementById('senderAddress').value, 
-                email: document.getElementById('senderEmail').value,
-                logoData: logoBase64 
-            },
-            client: { name: document.getElementById('clientName').value, address: document.getElementById('clientAddress').value, email: document.getElementById('clientEmail').value },
-            invoiceDate: document.getElementById('invoiceDate').value,
-            dueDate: document.getElementById('dueDate').value,
-            items: [],
-            amount: 0,
-            status: 'draft',
-        };
-
-        let totalAmount = 0;
+        let subtotal = 0;
+        const items = [];
         document.querySelectorAll('.item-row').forEach(row => {
             const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
             const price = parseFloat(row.querySelector('.item-price').value) || 0;
-            const item = { desc: row.querySelector('.item-desc').value, qty, price };
-            newInvoice.items.push(item);
-            totalAmount += qty * price;
+            items.push({ desc: row.querySelector('.item-desc').value, qty, price });
+            subtotal += qty * price;
         });
+
+        const taxRate = TAX_RATES[document.getElementById('clientCountry').value] || 0;
+        const taxAmount = subtotal * (taxRate / 100);
+        const totalAmount = subtotal + taxAmount;
         
-        newInvoice.amount = totalAmount;
-        invoices.unshift(newInvoice); // Add to the beginning of the list
-        renderInvoices();
-        resetInvoiceForm();
+        const newInvoice = {
+            id: 'INV' + String(Date.now()).slice(-4),
+            sender: { name: document.getElementById('senderName').value, address: document.getElementById('senderAddress').value, email: document.getElementById('senderEmail').value, logoData: logoBase64, country: document.getElementById('senderCountry').value },
+            client: { name: document.getElementById('clientName').value, address: document.getElementById('clientAddress').value, email: document.getElementById('clientEmail').value, country: document.getElementById('clientCountry').value },
+            invoiceDate: document.getElementById('invoiceDate').value, dueDate: document.getElementById('dueDate').value,
+            items, amount: totalAmount, subtotal: subtotal, tax: taxAmount, status: 'draft',
+        };
+        invoices.unshift(newInvoice);
+        renderInvoices(); resetInvoiceForm();
         window.scrollTo({ top: document.getElementById('invoice-list-section').offsetTop, behavior: 'smooth' });
     });
 
@@ -371,10 +326,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="text-align: right;">$${(item.qty * item.price).toFixed(2)}</td>
             </tr>
         `).join('');
+        const logoHtml = currentInvoice.sender.logoData ? `<img src="${currentInvoice.sender.logoData}" style="width:100%; max-width:200px; max-height:80px;" alt="Company Logo">` : `<h1 style="font-size: 30px; font-weight: bold;">${currentInvoice.sender.name}</h1>`;
         
-        const logoHtml = currentInvoice.sender.logoData 
-            ? `<img src="${currentInvoice.sender.logoData}" style="width:100%; max-width:200px; max-height:80px;" alt="Company Logo">`
-            : `<h1 style="font-size: 30px; font-weight: bold;">${currentInvoice.sender.name}</h1>`;
+        let initialTaxRate = TAX_RATES[currentInvoice.client.country] || 0;
 
         document.getElementById('invoice-preview-content').innerHTML = `
             <table cellpadding="0" cellspacing="0">
@@ -388,29 +342,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr></table></td></tr>
                 <tr class="heading"><td>Item</td><td style="text-align: right;">Price</td></tr>
                 ${itemsHtml}
-                <tr class="total"><td></td><td>Total: $${currentInvoice.amount.toFixed(2)}</td></tr>
-            </table>
-        `;
+                <tr class="item last"><td>Subtotal</td><td style="text-align: right;">$${currentInvoice.subtotal.toFixed(2)}</td></tr>
+                <tr class="item last">
+                    <td>
+                        Tax <input type="number" id="tax-rate-input" value="${initialTaxRate}" class="w-16 p-1 border rounded text-right">%
+                    </td>
+                    <td style="text-align: right;" id="tax-amount-cell">$${currentInvoice.tax.toFixed(2)}</td>
+                </tr>
+                <tr class="total"><td></td><td id="grand-total-cell">Grand Total: $${currentInvoice.amount.toFixed(2)}</td></tr>
+            </table>`;
+        
+        const taxRateInput = document.getElementById('tax-rate-input');
+        taxRateInput.addEventListener('input', () => recalculateTax(taxRateInput.value));
+        
         previewModal.classList.remove('hidden');
     }
     
-    invoiceListContainer.addEventListener('change', (e) => {
+    function recalculateTax(newRate) {
+        if (!currentInvoice) return;
+        const rate = parseFloat(newRate) || 0;
+        
+        currentInvoice.tax = currentInvoice.subtotal * (rate / 100);
+        currentInvoice.amount = currentInvoice.subtotal + currentInvoice.tax;
+
+        document.getElementById('tax-amount-cell').textContent = `$${currentInvoice.tax.toFixed(2)}`;
+        document.getElementById('grand-total-cell').textContent = `Grand Total: $${currentInvoice.amount.toFixed(2)}`;
+    }
+    
+    invoiceListContainer.addEventListener('input', (e) => {
         if (e.target.classList.contains('status-selector')) {
             const invoiceId = e.target.closest('[data-id]').dataset.id;
-            const newStatus = e.target.value;
-            updateInvoiceStatus(invoiceId, newStatus);
+            updateInvoiceStatus(invoiceId, e.target.value);
         }
     });
-
+    
     invoiceListContainer.addEventListener('click', (e) => {
         const viewButton = e.target.closest('.view-btn');
-        if (viewButton) {
-            const invoiceId = e.target.closest('[data-id]').dataset.id;
-            viewInvoice(invoiceId);
-        }
+        if (viewButton) viewInvoice(e.target.closest('[data-id]').dataset.id);
     });
 
-    // --- AI Email Composer Logic ---
     async function composeEmail() {
         if (!currentInvoice) return;
         emailComposerModal.classList.remove('hidden');
@@ -443,7 +413,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function handlePrint() {
-        const content = document.getElementById('invoice-preview-content').innerHTML;
+        const previewNode = document.getElementById('invoice-preview-content').cloneNode(true);
+        const taxInput = previewNode.querySelector('#tax-rate-input');
+        if (taxInput) {
+            const taxRateValue = taxInput.value;
+            taxInput.parentElement.innerHTML = `Tax (${taxRateValue}%)`;
+        }
+    
+        const content = previewNode.innerHTML;
         const printWindow = window.open('', '', 'height=800,width=800');
         printWindow.document.write('<html><head><title>Print Invoice</title>');
         printWindow.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
@@ -460,18 +437,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- Event Listeners ---
-    uploadLogoBtn.addEventListener('click', () => {
-        logoUploadInput.click();
-    });
-
+    uploadLogoBtn.addEventListener('click', () => logoUploadInput.click());
     logoUploadInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                logoBase64 = e.target.result;
-                logoPreview.src = logoBase64;
-            };
+            reader.onload = e => { logoBase64 = e.target.result; logoPreview.src = logoBase64; };
             reader.readAsDataURL(file);
         }
     });
@@ -488,9 +459,9 @@ document.addEventListener('DOMContentLoaded', () => {
     sendEmailBtn.addEventListener('click', sendEmail);
 
     // Initial Load
+    populateCountryDropdowns();
     renderInvoices();
     addInvoiceItemRow();
-    
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('invoiceDate').value = today;
     document.getElementById('dueDate').value = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
