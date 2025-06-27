@@ -76,7 +76,7 @@
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <header class="mb-10 text-center">
             <h1 class="text-4xl font-bold text-gray-800">InvoicePro</h1>
-            <p class="mt-2 text-lg text-gray-500">Create & Manage Invoices with AI</p>
+            <p class="mt-2 text-lg text-gray-500">Create & Manage Invoices</p>
         </header>
 
         <main class="space-y-12">
@@ -183,11 +183,10 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Data and State Management ---
     const TAX_RATES = { "US": 8.0, "CA": 13.0, "GB": 20.0, "AU": 10.0, "IN": 18.0, "DE": 19.0, "FR": 20.0, "JP": 10.0, "BR": 17.0, "RU": 20.0, "CN": 13.0, "ZA": 15.0, "MX": 16.0, "CH": 7.7, "SG": 8.0, "NZ": 15.0, "OTHER": 0.0 };
+    const CURRENCIES = { "US": "$", "CA": "CA$", "GB": "£", "AU": "A$", "IN": "₹", "DE": "€", "FR": "€", "JP": "¥", "BR": "R$", "RU": "₽", "CN": "¥", "ZA": "R", "MX": "$", "CH": "CHF", "SG": "S$", "NZ": "NZ$", "OTHER": "$" };
     const COUNTRIES = [ { name: "United States", code: "US" }, { name: "Canada", code: "CA" }, { name: "United Kingdom", code: "GB" }, { name: "Australia", code: "AU" }, { name: "India", code: "IN" }, { name: "Germany", code: "DE" }, { name: "France", code: "FR" }, { name: "Japan", code: "JP" }, { name: "Brazil", code: "BR" }, { name: "Russia", code: "RU" }, { name: "China", code: "CN" }, { name: "South Africa", code: "ZA" }, { name: "Mexico", code: "MX" }, { name: "Switzerland", code: "CH" }, { name: "Singapore", code: "SG" }, { name: "New Zealand", code: "NZ" }, { name: "-----------------", code: "", disabled: true }, { name: "Afghanistan", code: "AF" }, { name: "Albania", code: "AL" }, { name: "Algeria", code: "DZ" }, { name: "Argentina", code: "AR" }, { name: "Austria", code: "AT" }, { name: "Bangladesh", code: "BD" }, { name: "Belgium", code: "BE" }, { name: "Chile", code: "CL" }, { name: "Colombia", code: "CO" }, { name: "Denmark", code: "DK" }, { name: "Egypt", code: "EG" }, { name: "Finland", code: "FI" }, { name: "Greece", code: "GR" }, { name: "Indonesia", code: "ID" }, { name: "Ireland", code: "IE" }, { name: "Israel", code: "IL" }, { name: "Italy", code: "IT" }, { name: "Malaysia", code: "MY" }, { name: "Netherlands", code: "NL" }, { name: "Nigeria", code: "NG" }, { name: "Norway", code: "NO" }, { name: "Pakistan", code: "PK" }, { name: "Peru", code: "PE" }, { name: "Philippines", code: "PH" }, { name: "Poland", code: "PL" }, { name: "Portugal", code: "PT" }, { name: "Saudi Arabia", code: "SA" }, { name: "South Korea", code: "KR" }, { name: "Spain", code: "ES" }, { name: "Sweden", code: "SE" }, { name: "Thailand", code: "TH" }, { name: "Turkey", code: "TR" }, { name: "Ukraine", code: "UA" }, { name: "United Arab Emirates", code: "AE" }, { name: "Vietnam", code: "VN" }, { name: "Other", code: "OTHER" } ].sort((a, b) => a.name.localeCompare(b.name));
 
-    let invoices = [
-        { id: 'INV001', client: { name: 'Stark Industries', address: '1 Stark Tower, NYC', email: 'tony@stark.com', country: 'US' }, amount: 1350.00, tax: 100.00, subtotal: 1250.00, dueDate: '2023-07-15', status: 'paid', sender: { name: 'InvoicePro Inc.', address: '123 Dev Lane, Coder City', email: 'billing@invoicepro.com', logoData: null, country: 'US' }, items: [{ desc: 'Arc Reactor Maintenance', qty: 1, price: 1250.00 }], invoiceDate: '2023-06-15' },
-    ];
+    let invoices = [];
     let currentInvoice = null;
     let logoBase64 = null;
 
@@ -207,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const closePreviewBtn = document.getElementById('closePreviewBtn');
     const printBtn = document.getElementById('printBtn');
     
-    // AI Feature Elements
     const composeEmailBtn = document.getElementById('composeEmailBtn');
     const emailComposerModal = document.getElementById('emailComposerModal');
     const emailBody = document.getElementById('emailBody');
@@ -215,7 +213,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeEmailComposerBtn = document.getElementById('closeEmailComposerBtn');
     const sendEmailBtn = document.getElementById('sendEmailBtn');
     const emailComposerStatus = document.getElementById('emailComposerStatus');
+    
+    // --- Local Storage Functions ---
+    function saveInvoices() {
+        localStorage.setItem('invoices', JSON.stringify(invoices));
+    }
 
+    function loadInvoices() {
+        const storedInvoices = localStorage.getItem('invoices');
+        if (storedInvoices) {
+            invoices = JSON.parse(storedInvoices);
+        } else {
+            invoices = [
+                { id: 'INV001', client: { name: 'Stark Industries', address: '1 Stark Tower, NYC', email: 'tony@stark.com', country: 'US' }, amount: 1350.00, tax: 100.00, subtotal: 1250.00, dueDate: '2023-07-15', status: 'paid', sender: { name: 'InvoicePro Inc.', address: '123 Dev Lane, Coder City', email: 'billing@invoicepro.com', logoData: null, country: 'US' }, items: [{ desc: 'Arc Reactor Maintenance', qty: 1, price: 1250.00 }], invoiceDate: '2023-06-15', currency: '$' },
+            ];
+        }
+    }
+    
     // --- Gemini API Function ---
     async function generateText(prompt) {
         const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
@@ -253,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div data-id="${inv.id}" class="bg-white md:grid md:grid-cols-6 md:gap-4 items-center p-4 border-b border-gray-200 flex flex-col space-y-2 md:space-y-0 rounded-lg shadow-sm md:shadow-none md:rounded-none">
                 <div class="hidden md:block"><span class="status-badge status-${displayStatus}">${displayStatus}</span></div>
                 <div class="hidden md:block"><p class="text-gray-900 whitespace-no-wrap">${inv.client.name}</p></div>
-                <div class="w-full flex justify-between md:block"><span class="font-semibold text-gray-500 md:hidden">Amount</span><p class="text-gray-900 whitespace-no-wrap md:text-left">$${inv.amount.toFixed(2)}</p></div>
+                <div class="w-full flex justify-between md:block"><span class="font-semibold text-gray-500 md:hidden">Amount</span><p class="text-gray-900 whitespace-no-wrap md:text-left">${inv.currency}${inv.amount.toFixed(2)}</p></div>
                 <div class="w-full flex justify-between md:block"><span class="font-semibold text-gray-500 md:hidden">Due Date</span><p class="text-gray-900 whitespace-no-wrap md:text-left">${new Date(inv.dueDate).toLocaleDateString()}</p></div>
                 <div class="w-full md:col-span-2 md:text-right pt-2 md:pt-0 flex flex-col sm:flex-row sm:items-center gap-2 justify-end">
                     <select class="status-selector text-xs py-2 px-3 border border-gray-300 rounded-md bg-white w-full sm:w-auto">
@@ -261,15 +275,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         <option value="sent">Sent</option><option value="paid">Paid</option><option value="draft">Draft</option>
                     </select>
                     <button class="view-btn text-indigo-600 hover:text-indigo-900 font-semibold py-2 px-4 rounded-md w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100">View Details</button>
+                    <button class="delete-btn text-red-600 hover:text-red-900 font-semibold py-2 px-4 rounded-md w-full sm:w-auto bg-red-50 hover:bg-red-100">Delete</button>
                 </div>
             </div>
         `}).join('');
     }
     
     function updateInvoiceStatus(invoiceId, newStatus) {
-        const invoice = invoices.find(inv => inv.id === invoiceId);
-        if (invoice) {
-            invoice.status = newStatus;
+        const invoiceIndex = invoices.findIndex(inv => inv.id === invoiceId);
+        if (invoiceIndex !== -1) {
+            invoices[invoiceIndex].status = newStatus;
+            saveInvoices();
             renderInvoices(); 
         }
     }
@@ -278,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'grid grid-cols-12 gap-2 item-row items-center';
         itemDiv.innerHTML = `
-            <div class="relative col-span-7"><input type="text" placeholder="Item Description" class="item-desc w-full p-2 border rounded-md" required><button type="button" class="gemini-btn absolute right-2 top-1/2 -translate-y-1/2 text-indigo-500 hover:text-indigo-700 font-bold hidden" title="Generate with AI">✨</button></div>
+            <div class="relative col-span-7"><input type="text" placeholder="Item Description" class="item-desc w-full p-2 border rounded-md" required><button type="button" class="gemini-btn absolute right-2 top-1/2 -translate-y-1/2 text-indigo-500 hover:text-indigo-700 font-bold hidden" title="Generate Description ✨">✨</button></div>
             <input type="number" placeholder="Qty" value="1" min="1" class="item-qty col-span-2 p-2 border rounded-md" required>
             <input type="number" placeholder="Price" min="0" step="0.01" class="item-price col-span-2 p-2 border rounded-md" required>
             <button type="button" class="removeItemBtn col-span-1 text-red-500 hover:text-red-700 text-2xl font-bold">&times;</button>
@@ -321,19 +337,23 @@ document.addEventListener('DOMContentLoaded', () => {
             subtotal += qty * price;
         });
 
-        const taxRate = TAX_RATES[document.getElementById('clientCountry').value] || 0;
+        const clientCountry = document.getElementById('clientCountry').value;
+        const taxRate = TAX_RATES[clientCountry] || 0;
         const taxAmount = subtotal * (taxRate / 100);
         const totalAmount = subtotal + taxAmount;
+        const currencySymbol = CURRENCIES[clientCountry] || '$';
         
         const newInvoice = {
             id: 'INV' + String(Date.now()).slice(-4),
             sender: { name: document.getElementById('senderName').value, address: document.getElementById('senderAddress').value, email: document.getElementById('senderEmail').value, logoData: logoBase64, country: document.getElementById('senderCountry').value },
-            client: { name: document.getElementById('clientName').value, address: document.getElementById('clientAddress').value, email: document.getElementById('clientEmail').value, country: document.getElementById('clientCountry').value },
+            client: { name: document.getElementById('clientName').value, address: document.getElementById('clientAddress').value, email: document.getElementById('clientEmail').value, country: clientCountry },
             invoiceDate: document.getElementById('invoiceDate').value, dueDate: document.getElementById('dueDate').value,
-            items, amount: totalAmount, subtotal: subtotal, tax: taxAmount, status: 'draft',
+            items, amount: totalAmount, subtotal: subtotal, tax: taxAmount, status: 'draft', currency: currencySymbol
         };
         invoices.unshift(newInvoice);
-        renderInvoices(); resetInvoiceForm();
+        saveInvoices();
+        renderInvoices(); 
+        resetInvoiceForm();
         window.scrollTo({ top: document.getElementById('invoice-list-section').offsetTop, behavior: 'smooth' });
     });
 
@@ -344,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let itemsHtml = currentInvoice.items.map(item => `
             <tr class="item">
                 <td>${item.desc}</td>
-                <td style="text-align: right;">$${(item.qty * item.price).toFixed(2)}</td>
+                <td style="text-align: right;">${currentInvoice.currency}${(item.qty * item.price).toFixed(2)}</td>
             </tr>
         `).join('');
         const logoHtml = currentInvoice.sender.logoData ? `<img src="${currentInvoice.sender.logoData}" style="width:100%; max-width:200px; max-height:80px;" alt="Company Logo">` : `<h1 style="font-size: 30px; font-weight: bold;">${currentInvoice.sender.name}</h1>`;
@@ -363,14 +383,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr></table></td></tr>
                 <tr class="heading"><td>Item</td><td style="text-align: right;">Price</td></tr>
                 ${itemsHtml}
-                <tr class="item last"><td>Subtotal</td><td style="text-align: right;">$${currentInvoice.subtotal.toFixed(2)}</td></tr>
+                <tr class="item last"><td>Subtotal</td><td style="text-align: right;">${currentInvoice.currency}${currentInvoice.subtotal.toFixed(2)}</td></tr>
                 <tr class="item last">
                     <td>
                         Tax <input type="number" id="tax-rate-input" value="${initialTaxRate}" class="w-16 p-1 border rounded text-right">%
                     </td>
-                    <td style="text-align: right;" id="tax-amount-cell">$${currentInvoice.tax.toFixed(2)}</td>
+                    <td style="text-align: right;" id="tax-amount-cell">${currentInvoice.currency}${currentInvoice.tax.toFixed(2)}</td>
                 </tr>
-                <tr class="total"><td></td><td id="grand-total-cell">Grand Total: $${currentInvoice.amount.toFixed(2)}</td></tr>
+                <tr class="total"><td></td><td id="grand-total-cell">Grand Total: ${currentInvoice.currency}${currentInvoice.amount.toFixed(2)}</td></tr>
             </table>`;
         
         const taxRateInput = document.getElementById('tax-rate-input');
@@ -386,8 +406,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentInvoice.tax = currentInvoice.subtotal * (rate / 100);
         currentInvoice.amount = currentInvoice.subtotal + currentInvoice.tax;
 
-        document.getElementById('tax-amount-cell').textContent = `$${currentInvoice.tax.toFixed(2)}`;
-        document.getElementById('grand-total-cell').textContent = `Grand Total: $${currentInvoice.amount.toFixed(2)}`;
+        document.getElementById('tax-amount-cell').textContent = `${currentInvoice.currency}${currentInvoice.tax.toFixed(2)}`;
+        document.getElementById('grand-total-cell').textContent = `Grand Total: ${currentInvoice.currency}${currentInvoice.amount.toFixed(2)}`;
     }
     
     invoiceListContainer.addEventListener('input', (e) => {
@@ -399,19 +419,31 @@ document.addEventListener('DOMContentLoaded', () => {
     
     invoiceListContainer.addEventListener('click', (e) => {
         const viewButton = e.target.closest('.view-btn');
-        if (viewButton) viewInvoice(e.target.closest('[data-id]').dataset.id);
+        if (viewButton) {
+            viewInvoice(e.target.closest('[data-id]').dataset.id);
+            return;
+        }
+
+        const deleteButton = e.target.closest('.delete-btn');
+        if (deleteButton) {
+            const invoiceId = e.target.closest('[data-id]').dataset.id;
+            if (confirm(`Are you sure you want to delete invoice ${invoiceId}?`)) {
+                invoices = invoices.filter(inv => inv.id !== invoiceId);
+                saveInvoices();
+                renderInvoices();
+            }
+        }
     });
 
-    // --- AI Email Composer Logic ---
     async function composeEmail() {
         if (!currentInvoice) return;
         emailComposerModal.classList.remove('hidden');
-        emailComposerStatus.textContent = "Generating email content with AI...";
+        emailComposerStatus.textContent = "Generating email content...";
         const btn = regenerateEmailBtn;
         btn.disabled = true;
         btn.innerHTML = `<div class="loader"></div> Regenerating...`;
         
-        const prompt = `Draft a polite and professional email to a client named ${currentInvoice.client.name} about invoice #${currentInvoice.id}. The total amount due is $${currentInvoice.amount.toFixed(2)} and the due date is ${new Date(currentInvoice.dueDate).toLocaleDateString()}. Sign off with the name "${currentInvoice.sender.name}". The tone should be friendly but clear. Do not include a subject line.`;
+        const prompt = `Draft a polite and professional email to a client named ${currentInvoice.client.name} about invoice #${currentInvoice.id}. The total amount due is ${currentInvoice.currency}${currentInvoice.amount.toFixed(2)} and the due date is ${new Date(currentInvoice.dueDate).toLocaleDateString()}. Sign off with the name "${currentInvoice.sender.name}". The tone should be friendly but clear. Do not include a subject line.`;
         
         const generatedBody = await generateText(prompt);
         
@@ -481,6 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sendEmailBtn.addEventListener('click', sendEmail);
 
     // Initial Load
+    loadInvoices();
     populateCountryDropdowns();
     renderInvoices();
     addInvoiceItemRow();
